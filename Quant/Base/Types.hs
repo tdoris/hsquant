@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Quant.Base.Types 
 (
@@ -12,8 +13,8 @@ module Quant.Base.Types
 , RIC
 , Root 
 , TimeStamp 
-, Price 
-, Qty
+, Price(..)
+, Qty(..)
 , TickSize
 , Bid
 , Ask 
@@ -46,10 +47,10 @@ import qualified Data.Attoparsec.Char8 as P
 import qualified Data.ByteString.Char8 as BS
 import Quant.Decimal
 
-type Price = Decimal
-type Qty = Decimal
-type Count = Decimal
-type TickSize = Decimal
+newtype Price = MkPrice Decimal deriving (Show,Eq,Ord,Num)
+newtype Qty = MkQty Decimal deriving (Show,Eq,Ord,Num)
+newtype Count = MkCount Decimal deriving (Show,Eq,Ord,Num)
+newtype TickSize = MkTickSize Decimal deriving (Show,Eq,Ord)
 
 type TWABidQty = Qty
 type TWAAskQty = Qty
@@ -128,13 +129,13 @@ data Bar = Bar
 -- functions to parse basic types from bytestrings
 
 getPrice :: BS.ByteString -> Price
-getPrice b = parseDecimal b 
+getPrice b = MkPrice $ parseDecimal b 
 
 getQty :: BS.ByteString -> Qty
-getQty b = parseDecimal b
+getQty b = MkQty $ parseDecimal b
 
 getCount :: BS.ByteString -> Count
-getCount b = parseDecimal b
+getCount b = MkCount $ parseDecimal b
 
 getTime :: BS.ByteString -> TimeOfDay
 getTime b = parseTime b 

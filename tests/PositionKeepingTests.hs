@@ -1,4 +1,9 @@
 module Main(main) where
 
+import Test.QuickCheck
+import Quant.Performance
+
+
+
 main :: IO ()
-main = print "Position Keeping Tests"
+main = Quant.Performance.runTests
