@@ -1,16 +1,16 @@
 -- some convenience utility functions for quant analysis. A lot of these
--- are simple wrappers around the Statistics library functions, in part, the 
--- purpose of this module is to document how to call the library functions to get 
+-- are simple wrappers around the Statistics library functions, in part, the
+-- purpose of this module is to document how to call the library functions to get
 -- a sensible, expected default, an exercise that often involves figuring out which
 -- of several packages should be used (e.g. the gsl wrappers are comprehensive and but
 -- I hit some bugs (segfaults) when running under GHCi on 64-bit linux that don't look like
 -- they'll be fixed soon). We also intentionally provide versions that
--- operate on [Double] rather than Vector Double for convenience. For 
+-- operate on [Double] rather than Vector Double for convenience. For
 -- higher performance (iff you have vectors with >> 1000 elements)
 -- you should get the data into Vectors and use the Vector
 -- functions directly
 
-module Quant.Base.Utils 
+module Quant.Base.Utils
 (
   mean
 , variance
@@ -25,9 +25,10 @@ module Quant.Base.Utils
 , cummin
 , cummax
 , rnorm
-, plot
+{-, plot
 , plotHist
 , plotKDE
+-}
 , bucket
 , dropUntilNext
 , takeWhilePlusOne
@@ -35,17 +36,17 @@ module Quant.Base.Utils
 )
 where
 
-import Data.List
-import Control.Monad
-import System.Random.MWC
-import System.Random.MWC.Distributions
-import qualified Data.Vector.Storable as V
-import qualified Data.Vector.Unboxed as UV
-import qualified Graphics.Plot as Plot
-import qualified Statistics.Sample.Histogram as H
+import           Control.Monad
+import           Data.List
+import qualified Data.Vector.Storable            as V
+import qualified Data.Vector.Unboxed             as UV
+--import qualified Graphics.Plot                   as Plot
+import qualified Statistics.Quantile             as Quantile
+import qualified Statistics.Sample               as Sample
+import qualified Statistics.Sample.Histogram     as H
 import qualified Statistics.Sample.KernelDensity as KernelDensity
-import qualified Statistics.Sample as Sample
-import qualified Statistics.Quantile as Quantile
+import           System.Random.MWC
+import           System.Random.MWC.Distributions
 
 mean :: [Double] -> Double
 mean ds = Sample.mean (V.fromList ds)
@@ -62,26 +63,26 @@ moment k d = Sample.centralMoment k (V.fromList d)
 
 -- uses the continuousBy and "s" method to match R defaults
 quantile :: Int -- ^ /k/, the desired quantile
-        -> Int -- ^ /q/, the number of quantiles 
+        -> Int -- ^ /q/, the number of quantiles
         -> [Double] -- /x/, the sample data
         -> Double
 quantile k qCount ds = Quantile.continuousBy Quantile.s k qCount (V.fromList ds)
 
-data Summary = Summary 
+data Summary = Summary
   {
-    summMin :: Double
-  , summ1stQ :: Double
+    summMin    :: Double
+  , summ1stQ   :: Double
   , summMedian :: Double
-  , summMean :: Double
-  , summ3rdQ :: Double
-  , summMax :: Double
+  , summMean   :: Double
+  , summ3rdQ   :: Double
+  , summMax    :: Double
   } deriving Show
 
 summary :: [Double] -> Summary
-summary ds = Summary (minimum ds) (quantile 1 4 ds) (quantile 2 4 ds) (mean ds) (quantile 3 4 ds) (maximum ds) 
+summary ds = Summary (minimum ds) (quantile 1 4 ds) (quantile 2 4 ds) (mean ds) (quantile 3 4 ds) (maximum ds)
 
 tstat :: [Double] -> Double
-tstat ds = (mean ds) / ((sd ds) / sqrt n) 
+tstat ds = (mean ds) / ((sd ds) / sqrt n)
   where n = genericLength ds
 
 cumsum :: Num a => [a]->[a]
@@ -101,22 +102,24 @@ cummin [] = error "cummin called on empty list"
 cummin s = scanl1 min s
 
 -- plot wrapper function
-plot :: [[Double]] -> IO ()
-plot xs = Plot.mplot (map V.fromList xs)
+-- latest versions of hmatrix don't include plotting, wait until chris done's package isready
+{--
+--plot :: [[Double]] -> IO ()
+--plot xs = Plot.mplot (map V.fromList xs)
 
--- TODO - not sure why kde uses Unboxed vectors, the rest of the Statistics package seems to 
+-- TODO - not sure why kde uses Unboxed vectors, the rest of the Statistics package seems to
 -- use Generic
 plotKDE :: [Double] -> IO ()
 plotKDE ds = plot [UV.toList xs, UV.toList ys]
   where (xs, ys) = KernelDensity.kde 32 (UV.fromList ds)
-
 plotHist :: [Double] -> IO ()
 plotHist ds = plot [V.toList xs, V.toList ys]
   where (xs, ys) = H.histogram 32 (V.fromList ds)
+-}
 
--- regression 
+-- regression
 --
-lm :: [Double] -> [Double] -> (Double, Double) 
+lm :: [Double] -> [Double] -> (Double, Double)
 lm ys xs =  undefined
   where (alpha, beta) = undefined
 
@@ -129,7 +132,7 @@ rnorm count mean sd = withSystemRandom . asGenIO $ \gen -> replicateM count (nor
 -- | 'bucket' creates a sublist containing elements that satisfy each predicate in turn
 --   For example:
 --
---   > bucket [(<10),(<20)] [5,10,15] == [[5],[10,15]] 
+--   > bucket [(<10),(<20)] [5,10,15] == [[5],[10,15]]
 bucket :: [a->Bool] -> [a] -> [[a]]
 bucket (p:ps) ls = takeWhile p ls : bucket ps (dropWhile p ls)
 bucket _ _ = []

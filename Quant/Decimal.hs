@@ -1,8 +1,9 @@
-{-# LANGUAGE TypeSynonymInstances,FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 
 -- This is a slightly patched version of Data.Decimal
--- the original implementation defined that binary arithmetic results 
+-- the original implementation defined that binary arithmetic results
 -- had an exponent equal to the maximum of the exponents of the arguments
 -- which meant that multiplication operations could lose significant precision
 -- we define (*) to preserve precision
@@ -13,17 +14,17 @@
 -- | Decimal numbers are represented as @m*10^(-e)@ where
 -- @m@ and @e@ are integers.  The exponent @e@ is an unsigned Word8.  Hence
 -- the smallest value that can be represented is @10^-255@.
--- 
+--
 -- Unary arithmetic results have the exponent of the argument.  Binary
 -- arithmetic results have an exponent equal to the maximum of the exponents
 -- of the arguments.
--- 
+--
 -- Decimal numbers are defined as instances of @Real@.  This means that
--- conventional division is not defined.  Instead the functions @divide@ and 
--- @allocate@ will split a decimal amount into lists of results.  These 
+-- conventional division is not defined.  Instead the functions @divide@ and
+-- @allocate@ will split a decimal amount into lists of results.  These
 -- results are guaranteed to sum to the original number.  This is a useful
 -- property when doing financial arithmetic.
--- 
+--
 -- The arithmetic on mantissas is always done using @Integer@, regardless of
 -- the type of @DecimalRaw@ being manipulated.  In practice it is recommended
 -- that @Decimal@ be used, with other types being used only where necessary
@@ -56,45 +57,45 @@ module Quant.Decimal (
 ) where
 
 
-import Control.Monad
-import Data.Char
-import Data.Ratio
-import Data.Word
-import Numeric
-import Test.QuickCheck
-import Text.ParserCombinators.ReadP
+import           Control.Monad
+import           Data.Char
+import           Data.Ratio
+import           Data.Word
+import           Numeric
+import           Test.QuickCheck
+import           Text.ParserCombinators.ReadP
 
 -- | Raw decimal arithmetic type constructor.  A decimal value consists of an
 -- integer mantissa and a negative exponent which is interpreted as the number
 -- of decimal places.  The value stored in a @Decimal d@ is therefore equal to:
--- 
+--
 -- > decimalMantissa d / (10 ^ decimalPlaces d)
--- 
+--
 -- The "Show" instance will add trailing zeros, so @show $ Decimal 3 1500@
 -- will return \"1.500\".  Conversely the "Read" instance will use the decimal
 -- places to determine the precision.
--- 
--- Arithmetic and comparision operators convert their arguments to the 
--- greater of the two precisions, and return a result of that precision.  
+--
+-- Arithmetic and comparision operators convert their arguments to the
+-- greater of the two precisions, and return a result of that precision.
 -- Regardless of the type of the arguments, all mantissa arithmetic is done
 -- using @Integer@ types, so application developers do not need to worry about
 -- overflow in the internal algorithms.  However the result of each operator
 -- will be converted to the mantissa type without checking for overflow.
 data (Integral i) => DecimalRaw i = Decimal {
-      decimalPlaces :: Word8,
+      decimalPlaces   :: Word8,
       decimalMantissa :: i}
 
 
 -- | Arbitrary precision decimal type.  As a rule programs should do decimal
--- arithmetic with this type and only convert to other instances of 
+-- arithmetic with this type and only convert to other instances of
 -- "DecimalRaw" where required by an external interface.
--- 
+--
 -- Using this type is also faster because it avoids repeated conversions
 -- to and from @Integer@.
 type Decimal = DecimalRaw Integer
 
 
--- | Convert a real fractional value into a Decimal of the appropriate 
+-- | Convert a real fractional value into a Decimal of the appropriate
 -- precision.
 realFracToDecimal :: (Integral i, RealFrac r) => Word8 -> r -> DecimalRaw i
 realFracToDecimal e r = Decimal e $ round (r * (10^e))
@@ -125,7 +126,7 @@ roundTo d (Decimal e n) = Decimal d $ fromIntegral n1
 
 
 -- Round the two DecimalRaw values to the largest exponent.
-roundMax :: (Integral i) => 
+roundMax :: (Integral i) =>
             DecimalRaw i -> DecimalRaw i -> (Word8, Integer, Integer)
 roundMax d1@(Decimal e1 n1') d2@(Decimal e2 n2') | e1 == e2 = (e1, fromIntegral n1', fromIntegral n2')
                                                  | otherwise = (e, n1, n2)
@@ -147,7 +148,7 @@ instance (Integral i, Show i) => Show (DecimalRaw i) where
          (intPart, fracPart) = splitAt (max 1 (len - fromIntegral e)) padded
 
 instance (Integral i, Read i) => Read (DecimalRaw i) where
-    readsPrec _ = 
+    readsPrec _ =
         readP_to_S $ do
           (intPart, _) <- gather $ do
                             optional $ char '-'
@@ -155,15 +156,15 @@ instance (Integral i, Read i) => Read (DecimalRaw i) where
           fractPart    <- option "" $ do
                             _ <- char '.'
                             munch1 isDigit
-          return $ Decimal (fromIntegral $ length fractPart) $ read $ 
+          return $ Decimal (fromIntegral $ length fractPart) $ read $
                  intPart ++ fractPart
 
 instance (Integral i) => Eq (DecimalRaw i) where
    d1 == d2   =   n1 == n2 where (_, n1, n2) = roundMax d1 d2
 
 instance (Integral i) => Ord (DecimalRaw i) where
-    compare d1@(Decimal e1 n1') d2@(Decimal e2 n2') = 
-      if e1 == e2 then compare n1' n2' else compare n1 n2 
+    compare d1@(Decimal e1 n1') d2@(Decimal e2 n2') =
+      if e1 == e2 then compare n1' n2' else compare n1 n2
         where (_, n1, n2) = roundMax d1 d2
 
 instance (Integral i) => Num (DecimalRaw i) where
@@ -171,8 +172,8 @@ instance (Integral i) => Num (DecimalRaw i) where
         where (e, n1, n2) = roundMax d1 d2
     d1 - d2 = Decimal e $ fromIntegral (n1 - n2)
         where (e, n1, n2) = roundMax d1 d2
-    d1 * d2 = Decimal (decimalPlaces d1 + decimalPlaces d2) (decimalMantissa d1 * decimalMantissa d2) 
-   -- e $ fromIntegral $ 
+    d1 * d2 = Decimal (decimalPlaces d1 + decimalPlaces d2) (decimalMantissa d1 * decimalMantissa d2)
+   -- e $ fromIntegral $
    --           (n1 * n2) `divRound` (10 ^ e)
    --     where (e, n1, n2) = roundMax d1 d2
     abs (Decimal e n) = Decimal e $ abs n
@@ -196,24 +197,24 @@ instance (Integral i, Arbitrary i) => Arbitrary (DecimalRaw i) where
       e <- sized (\n -> resize (n `div` 10) arbitrary) :: Gen Int
       m <- sized (\n -> resize (n * 10) arbitrary)
       return $ Decimal (fromIntegral $ abs e) m
-    --coarbitrary (Decimal e m) gen = 
+    --coarbitrary (Decimal e m) gen =
     --    variant (fromIntegral e + fromIntegral m) gen
 
 
 -- | Divide a @DecimalRaw@ value into one or more portions.  The portions
 -- will be approximately equal, and the sum of the portions is guaranteed to
 -- be the original value.
--- 
+--
 -- The portions are represented as a list of pairs.  The first part of each
 -- pair is the number of portions, and the second part is the portion value.
 -- Hence 10 dollars divided 3 ways will produce @[(2, 3.33), (1, 3.34)]@.
 divide :: (Integral i) => DecimalRaw i -> Int -> [(Int, DecimalRaw i)]
-divide (Decimal e n) d 
-    | d > 0 = 
+divide (Decimal e n) d
+    | d > 0 =
         case n `divMod` fromIntegral d of
           (result, 0) -> [(fromIntegral d, Decimal e result)]
           (result, r) -> [(fromIntegral d - fromIntegral r,
-                           Decimal e result), 
+                           Decimal e result),
                           (fromIntegral r, Decimal e (result+1))]
     | otherwise = error "Data.Decimal.divide: Divisor must be > 0."
 
@@ -221,21 +222,21 @@ divide (Decimal e n) d
 
 -- | Allocate a @DecimalRaw@ value proportionately with the values in a list.
 -- The allocated portions are guaranteed to add up to the original value.
--- 
--- Some of the allocations may be zero or negative, but the sum of the list 
+--
+-- Some of the allocations may be zero or negative, but the sum of the list
 -- must not be zero.  The allocation is intended to be as close as possible
 -- to the following:
--- 
+--
 -- > let result = allocate d parts
 -- > in all (== d / sum parts) $ zipWith (/) result parts
 allocate :: (Integral i) => DecimalRaw i -> [Int] -> [DecimalRaw i]
 allocate (Decimal e n) ps
-    | total == 0  = 
+    | total == 0  =
         error "Data.Decimal.allocate: allocation list must not sum to zero."
     | otherwise   = map (Decimal e) $ zipWith (-) ts (tail ts)
     where
       ts = map fst $ scanl nxt (n, total) ps
-      nxt (n1, t1) p1 = (n1 - (n1 * fromIntegral p1) `zdiv` t1, 
+      nxt (n1, t1) p1 = (n1 - (n1 * fromIntegral p1) `zdiv` t1,
                          t1 - fromIntegral p1)
       zdiv 0 0 = 0
       zdiv x y = x `divRound` y
@@ -248,21 +249,21 @@ allocate (Decimal e n) ps
 
 
 -- | "read" is the inverse of "show".
--- 
+--
 -- > read (show n) == n
 prop_readShow :: Decimal -> Bool
 prop_readShow d =  read (show d) == d
 
 -- | Read and show preserve decimal places.
--- 
+--
 -- > decimalPlaces (read (show n)) == decimalPlaces n
 prop_readShowPrecision :: Decimal -> Bool
-prop_readShowPrecision d =  decimalPlaces (read (show d) :: Decimal) 
+prop_readShowPrecision d =  decimalPlaces (read (show d) :: Decimal)
                             == decimalPlaces d
 
 
 -- | "fromInteger" definition.
--- 
+--
 -- > decimalPlaces (fromInteger n) == 0 &&
 -- > decimalMantissa (fromInteger n) == n
 prop_fromIntegerZero :: Integer -> Bool
@@ -271,16 +272,16 @@ prop_fromIntegerZero n =  decimalPlaces (fromInteger n :: Decimal) == 0 &&
 
 
 -- | Increased precision does not affect equality.
--- 
+--
 -- > decimalPlaces d < maxBound ==> roundTo (decimalPlaces d + 1) d == d
 prop_increaseDecimals :: Decimal -> Property
-prop_increaseDecimals d =  
+prop_increaseDecimals d =
     decimalPlaces d < maxBound ==> roundTo (decimalPlaces d + 1) d == d
 
 
 -- | Decreased precision can make two decimals equal, but it can never change
 -- their order.
--- 
+--
 -- > forAll d1, d2 :: Decimal -> legal beforeRound afterRound
 -- >      where
 -- >         beforeRound = compare d1 d2
@@ -304,54 +305,54 @@ prop_inverseAdd x y =  (x + y) - y == x
 
 
 -- | Multiplication is repeated addition.
--- 
+--
 -- > (sum $ replicate i d) == d * fromIntegral (max i 0)
 prop_repeatedAdd :: Decimal -> Int -> Bool
 prop_repeatedAdd d i = (sum $ replicate i d) == d * fromIntegral (max i 0)
 
 
 -- | Division produces the right number of parts.
--- 
+--
 -- > i > 0 ==> (sum $ map fst $ divide d i) == i
 prop_divisionParts :: Decimal -> Int -> Property
 prop_divisionParts d i =  i > 0 ==> (sum $ map fst $ divide d i) == i
 
 
 -- | Division doesn't drop any units.
--- 
+--
 -- > i > 0 ==> (sum $ map (\(n,d1) -> fromIntegral n * d1) $ divide d i) == d
 prop_divisionUnits :: Decimal -> Int -> Property
-prop_divisionUnits d i = 
+prop_divisionUnits d i =
     i > 0 ==> (sum $ map (\(n,d1) -> fromIntegral n * d1) $ divide d i) == d
 
 
 -- | Allocate produces the right number of parts.
--- 
+--
 -- > (not . null) ps ==> length ps == length (allocate d ps)
 prop_allocateParts :: Decimal -> [Int] -> Property
-prop_allocateParts d ps =  
+prop_allocateParts d ps =
     sum ps /= 0 ==> length ps == length (allocate d ps)
 
 
 -- | Allocate doesn't drop any units.
--- 
+--
 -- >     (not . null) ps ==> sum (allocate d ps) == d
 prop_allocateUnits :: Decimal -> [Int] -> Property
 prop_allocateUnits d ps =
     sum ps /= 0 ==> sum (allocate d ps) == d
 
 -- | Absolute value definition
--- 
--- > decimalPlaces a == decimalPlaces d && 
+--
+-- > decimalPlaces a == decimalPlaces d &&
 -- > decimalMantissa a == abs (decimalMantissa d)
 -- >    where a = abs d
 prop_abs :: Decimal -> Bool
-prop_abs d =  decimalPlaces a == decimalPlaces d && 
+prop_abs d =  decimalPlaces a == decimalPlaces d &&
               decimalMantissa a == abs (decimalMantissa d)
     where a = abs d
 
 -- | Sign number defintion
--- 
+--
 -- > signum d == (fromInteger $ signum $ decimalMantissa d)
 prop_signum :: Decimal -> Bool
 prop_signum d =  signum d == (fromInteger $ signum $ decimalMantissa d)

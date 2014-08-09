@@ -1,10 +1,10 @@
-module Quant.Performance 
+module Quant.Performance
 ()
 where
 
-import Data.List
-import Quant.Base.Types
-import Quant.Decimal
+import           Data.List
+import           Quant.Base.Types
+import           Quant.Decimal
 
 type Position = Decimal
 type SplitRatio = Decimal
@@ -23,10 +23,10 @@ gleTransactions = map (\(p,q,d) -> Transaction (if q>0 then Buy else Sell) d p (
 acaTransactions = map (\(p,q,d) -> Transaction (if q>0 then Buy else Sell) d p (abs q)) $ zip3 psaca acaqty dates
 
 -- After each transaction we have state: (pnl, average_entry, signed_position)
-data State = State 
-  { sPnl :: Amount
+data State = State
+  { sPnl               :: Amount
   , sAverageEntryPrice :: Price
-  , sPosition :: Position
+  , sPosition          :: Position
   } deriving (Eq, Show)
 
 data Side = Buy | Sell deriving (Eq, Show)
