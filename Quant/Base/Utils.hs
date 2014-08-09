@@ -39,12 +39,12 @@ where
 import           Control.Monad
 import           Data.List
 import qualified Data.Vector.Storable            as V
-import qualified Data.Vector.Unboxed             as UV
+--import qualified Data.Vector.Unboxed             as UV
 --import qualified Graphics.Plot                   as Plot
 import qualified Statistics.Quantile             as Quantile
 import qualified Statistics.Sample               as Sample
-import qualified Statistics.Sample.Histogram     as H
-import qualified Statistics.Sample.KernelDensity as KernelDensity
+--import qualified Statistics.Sample.Histogram     as H
+--import qualified Statistics.Sample.KernelDensity as KernelDensity
 import           System.Random.MWC
 import           System.Random.MWC.Distributions
 
@@ -119,15 +119,15 @@ plotHist ds = plot [V.toList xs, V.toList ys]
 
 -- regression
 --
-lm :: [Double] -> [Double] -> (Double, Double)
+{-lm :: [Double] -> [Double] -> (Double, Double)
 lm ys xs =  undefined
   where (alpha, beta) = undefined
-
+-}
 -- some helper functions for generating random numbers, cos you'll never remember the withSystemRandom asGenIO crud
 
 -- | rnorm count mean sd
 rnorm :: Int -> Double -> Double -> IO [Double]
-rnorm count mean sd = withSystemRandom . asGenIO $ \gen -> replicateM count (normal mean sd gen)
+rnorm count dmean dsd = withSystemRandom . asGenIO $ \gen -> replicateM count (normal dmean dsd gen)
 
 -- | 'bucket' creates a sublist containing elements that satisfy each predicate in turn
 --   For example:

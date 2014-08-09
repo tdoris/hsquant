@@ -77,7 +77,7 @@ parseBarsCSV table = bars
     cols = getColumns table ["time","volume"
       ,"bid_start","start_ask","volume_up","volume_dn","volume_neither","trades","quotes","vwap","high","low"]
     rows = transpose cols
-    bars = map (\[time,volume,start_bid,start_ask,volume_up,volume_dn,volume_neither,tradeCount,quoteCount,vwap,high,low] 
+    bars = map (\[time,volume,start_bid,start_ask,volume_up,volume_dn,volume_neither,tradeCount,quoteCount,vwap,_high,_low] 
                    -> Bar (parseTime time) (getPrice start_bid) 0 0 0 (getPrice start_ask) 0 0 0 (getPrice vwap) (getQty volume) 
                           0 0 (getQty volume_dn) (getQty volume_up) (getQty volume_neither) (getCount tradeCount) (getCount quoteCount)
                ) 
@@ -96,7 +96,7 @@ isOnMarket :: BS.ByteString -> Bool
 isOnMarket _ = True
 
 data QuoteRow = QuoteRow 
-  { quoteRowTime :: BS.ByteString 
+  { _quoteRowTime :: BS.ByteString 
   , quoteRowBid :: BS.ByteString
   , quoteRowAsk :: BS.ByteString
   , quoteRowBidQty :: BS.ByteString

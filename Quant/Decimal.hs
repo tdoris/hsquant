@@ -56,8 +56,7 @@ module Quant.Decimal (
    prop_signum
 ) where
 
-
-import           Control.Monad
+ 
 import           Data.Char
 import           Data.Ratio
 import           Data.Word

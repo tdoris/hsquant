@@ -35,5 +35,5 @@ makeBars ticRoot date ric outputRoot = do
 toLazy :: BS.ByteString -> BL.ByteString
 toLazy s = BL.fromChunks [s]
 
-fromLazy :: BL.ByteString -> BS.ByteString
-fromLazy l = BS.concat $ BL.toChunks l
+--fromLazy :: BL.ByteString -> BS.ByteString
+--fromLazy l = BS.concat $ BL.toChunks l

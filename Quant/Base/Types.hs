@@ -1,4 +1,7 @@
-{-# LANGUAGE ScopedTypeVariables,RecordWildCards,OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Quant.Base.Types 
 (
  Bar(..)
@@ -39,7 +42,6 @@ module Quant.Base.Types
 where
 
 import Control.Applicative
-import Data.List
 import qualified Data.Attoparsec.Char8 as P
 import qualified Data.ByteString.Char8 as BS
 import Quant.Decimal
