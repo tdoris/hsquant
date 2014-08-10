@@ -29,13 +29,13 @@ loadBars root date ric' = do
 --
 -- > loadQuotes "/data/trth" (Date "2012" "02" "14") "VOD.L" 
 
-loadQuotes' :: FilePath -> IO [Quote]
+loadQuotes' :: FilePath -> IO [ExchangeQuote]
 loadQuotes' qf = do 
   quotesCSV <- loadCSVBZ qf 
   let quotes = parseQuotesCSV quotesCSV 
   return quotes
 
-loadQuotes :: Root -> Date -> RIC -> IO [Quote]
+loadQuotes :: Root -> Date -> RIC -> IO [ExchangeQuote]
 loadQuotes root date ric' = do
   let ric = escapeRIC ric'
   let  qf = quotesFile root date ric
@@ -45,14 +45,14 @@ loadQuotes root date ric' = do
 --
 -- > loadTrades "/data/trth" (Date "2012" "02" "14") "VOD.L"
 
-loadTrades' ::FilePath -> IO [Trade]
+loadTrades' ::FilePath -> IO [ExchangeTrade]
 loadTrades' tf = do
   tradesCSV <- loadCSVBZ tf
   let trades = parseTradesCSV tradesCSV
   -- let onMarketTrades = filter isOnMarket trades
   return trades
 
-loadTrades :: Root -> Date -> RIC -> IO [Trade]
+loadTrades :: Root -> Date -> RIC -> IO [ExchangeTrade]
 loadTrades root date ric' = do
   let ric = escapeRIC ric'
   let tf = tradesFile root date ric
@@ -83,13 +83,13 @@ parseBarsCSV table = bars
                ) 
                rows
 
-parseTradesCSV :: CSVTable -> [Trade]
+parseTradesCSV :: CSVTable -> [ExchangeTrade]
 parseTradesCSV table = trades
   where
     cols = getColumns table ["Time[L]", "Price", "Volume", "Qualifiers"] 
     rows' = transpose cols
     rows  = filter (\[_,_,_,q] -> isOnMarket q) rows' 
-    trades = map (\[t,p,q,_] -> Trade (getTime t) (getPrice p) (getQty q)) rows
+    trades = map (\[t,p,q,_] -> ExchangeTrade (getTime t) (getPrice p) (getQty q)) rows
 
 -- TODO fixme
 isOnMarket :: BS.ByteString -> Bool
@@ -103,10 +103,10 @@ data QuoteRow = QuoteRow
   , quoteRowAskQty :: BS.ByteString
   } deriving (Eq, Show,Ord)
 
-toQuote :: QuoteRow -> Quote
-toQuote (QuoteRow t bid ask bqty aqty) = Quote (getTime t) (getPrice bid) (getPrice ask) (getQty bqty) (getQty aqty)
+toQuote :: QuoteRow -> ExchangeQuote
+toQuote (QuoteRow t bid ask bqty aqty) = ExchangeQuote (getTime t) (getPrice bid) (getPrice ask) (getQty bqty) (getQty aqty)
 
-parseQuotesCSV :: CSVTable -> [Quote]
+parseQuotesCSV :: CSVTable -> [ExchangeQuote]
 parseQuotesCSV table = map toQuote quotes
   where  
     cols' = getColumns table ["Time[L]", "Bid Price", "Ask Price", "Bid Size", "Ask Size"] 

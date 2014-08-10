@@ -7,8 +7,8 @@
 module Quant.Base.Types 
 (
  Bar(..)
-, Quote(..)
-, Trade(..)
+, ExchangeQuote(..)
+, ExchangeTrade(..)
 , TWABidQty
 , TWAAskQty
 , RIC
@@ -36,13 +36,13 @@ module Quant.Base.Types
 , HighAsk 
 , TimeOfDay(..) 
 , AmountMaker(..)
+, Side(..)
 , parseDate
 , parseTime
 , getPrice
 , getQty
 , getTime
 , getCount
-, calcAmount
 )
 where
 
@@ -73,6 +73,8 @@ data TimeOfDay = TimeOfDay Integer deriving (Eq,Ord,Show)
 
 type TimeStamp = String
 
+data Side = Buy | Sell deriving (Eq, Show)
+
 type Bid = Price
 type Ask = Price
 type BidQty = Qty
@@ -96,7 +98,7 @@ type HighBid = Price
 type LowAsk = Price
 type HighAsk = Price
 
-data Quote = Quote
+data ExchangeQuote = ExchangeQuote
   { quoteTime :: TimeOfDay
   , quoteBid :: Bid
   , quoteAsk :: Ask
@@ -105,7 +107,7 @@ data Quote = Quote
   }
   deriving (Eq,Show,Ord)
 
-data Trade = Trade 
+data ExchangeTrade = ExchangeTrade 
   { tradeTime :: TimeOfDay 
   , tradePrice :: Price 
   , tradeQty :: Qty
@@ -142,12 +144,6 @@ instance AmountMaker Price Qty where
 
 instance AmountMaker Amount Qty where
   toAmount (MkAmount p) (MkQty q) = MkAmount (p*q)
-
-calcAmount :: Price -> Qty -> Amount
-calcAmount (MkPrice p) (MkQty q) = MkAmount (p*q)
-
-amountMultiply :: Amount -> Qty -> Amount
-amountMultiply (MkAmount a) (MkQty q) = MkAmount (a*q)
 
 
 -- functions to parse basic types from bytestrings

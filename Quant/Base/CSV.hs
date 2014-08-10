@@ -136,11 +136,11 @@ bar2CSVRow Bar{..} = BS.intercalate "," $ map BS.pack [toTimeStamp barTime, show
 barCSVHeader :: BS.ByteString
 barCSVHeader = BS.pack "time, bidopen, bidlow, bidhigh, bidclose, askopen, asklow, askhigh, askclose, bidqtytwa, askqtytwa, vwap, volume, bidqtytraded, askqtytraded, unknownqtytraded"
 
-trade2CSVRow :: Trade -> BS.ByteString
-trade2CSVRow Trade{..} = BS.intercalate "," [BS.pack $ toTimeStamp tradeTime, BS.pack $ show tradePrice, BS.pack $ show tradeQty] 
+trade2CSVRow :: ExchangeTrade -> BS.ByteString
+trade2CSVRow ExchangeTrade{..} = BS.intercalate "," [BS.pack $ toTimeStamp tradeTime, BS.pack $ show tradePrice, BS.pack $ show tradeQty] 
 
-quote2CSVRow :: Quote -> BS.ByteString 
-quote2CSVRow Quote{..} = BS.intercalate "," [BS.pack $ toTimeStamp quoteTime, BS.pack $ show quoteBidQty, BS.pack $ show quoteBid, BS.pack $ show quoteAsk, BS.pack $ show quoteAskQty]
+quote2CSVRow :: ExchangeQuote -> BS.ByteString 
+quote2CSVRow ExchangeQuote{..} = BS.intercalate "," [BS.pack $ toTimeStamp quoteTime, BS.pack $ show quoteBidQty, BS.pack $ show quoteBid, BS.pack $ show quoteAsk, BS.pack $ show quoteAskQty]
 
 toTimeStamp :: TimeOfDay -> String
 toTimeStamp (TimeOfDay t) = intercalate ":" [hourString, minString, secString] ++ "." ++ msecString
