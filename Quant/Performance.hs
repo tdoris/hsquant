@@ -1,14 +1,16 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Quant.Performance
 (Quant.Performance.runTests)
 where
 
+import           Control.Lens        hiding (elements)
+import           Control.Monad.State
 import           Data.List
 import           Quant.Base.Types
 import           Quant.Decimal
 import           Test.QuickCheck
 
 type SplitRatio = Decimal
-type Amount = Decimal
 data Side = Buy | Sell deriving (Eq, Show)
 
 data Transaction = Transaction {transSide::Side, transPrice::Price, transQty::Qty}
@@ -16,6 +18,46 @@ data Transaction = Transaction {transSide::Side, transPrice::Price, transQty::Qt
                    |Split SplitRatio
                     deriving (Eq, Show)
 
+data Book = Book
+  { _cash       :: Amount
+  , _shareCount :: Qty
+  } deriving (Eq, Show)
+
+makeLenses ''Book
+
+update :: Transaction -> State Book ()
+
+update (Transaction Buy p q) = do
+  cash -= toAmount p q
+  shareCount += q
+
+update (Transaction Sell p q) = do
+  cash += toAmount p q
+  shareCount -= q
+
+update (Dividend amt) = do
+  -- check if there's a way to do this in one line
+  count <- use shareCount
+  cash += toAmount amt count 
+
+update (Split ratio) = do
+  shareCount *= MkQty ratio
+
+processTransaction :: Book -> Transaction -> Book
+processTransaction b t = b'
+  where
+    (_, b') = runState (update t) b
+
+position :: [Transaction] -> Book
+position = foldl' processTransaction (Book 0 0)
+
+markToMarketPnl :: Price -> State Book Amount
+markToMarketPnl p = do
+  s <- gets _shareCount
+  c <- gets _cash
+  return (c + toAmount p s)
+
+--TODO generate Dividends and Splits
 instance Arbitrary Transaction where
   arbitrary = do
     side <- elements [Buy, Sell]
@@ -23,59 +65,40 @@ instance Arbitrary Transaction where
     qty <- arbitrary :: Gen Decimal
     return (Transaction side (MkPrice $ abs price) (MkQty $ abs qty))
 
-data State = State
-  { sCash     :: Amount
-  , sPosition :: Qty
-  } deriving (Eq, Show)
-
-instance Arbitrary State where
+instance Arbitrary Book where
   arbitrary = do
     cash <- arbitrary :: Gen Decimal
     position <-  arbitrary :: Gen Decimal
-    return (State cash (MkQty position))
+    return (Book (MkAmount cash) (MkQty position))
 
-position :: [Transaction] -> State
-position = foldl' ptrans (State (0::Decimal) (MkQty 0))
+{-
 
-ptrans :: State -> Transaction -> State
-ptrans (State cash (MkQty shares)) (Dividend amt) = State (cash + amt*shares) (MkQty shares)
-ptrans (State cash (MkQty shares)) (Split ratio) = State cash (MkQty $ shares*ratio)
-ptrans (State cash shares) (Transaction Buy price qty) =
-  State (cash - (calcAmount price qty)) (shares + qty)
-ptrans (State cash shares) (Transaction Sell price qty) = State (cash + (calcAmount price  qty)) (shares -qty)
-
-calcAmount :: Price -> Qty -> Amount
-calcAmount (MkPrice p) (MkQty q) = p*q
-
-closingTransaction :: State -> Price -> Transaction
-closingTransaction (State _ qty) price
+closingTransaction :: Book -> Price -> Transaction
+closingTransaction (Book _ qty) price
   | qty > 0   = Transaction Sell price qty
   | otherwise = Transaction Buy price (abs qty)
-
-markToMarketPnl :: State -> Price -> Amount
-markToMarketPnl (State cash qty) marketPrice = cash + (calcAmount marketPrice qty)
+-}
 
 --- Tests
 --
 propSimpleStart :: Transaction -> Bool
 propSimpleStart t@(Transaction Buy tprice tqty) =
-  ptrans (State 0 0) t == State (- (calcAmount tprice tqty)) tqty
+  processTransaction (Book 0 0) t == Book (- (toAmount tprice tqty)) tqty
 
 propSimpleStart t@(Transaction Sell tprice tqty) =
-  ptrans (State 0 0) t == State (calcAmount tprice tqty) (-tqty)
+  processTransaction (Book 0 0) t == Book (toAmount tprice tqty) (-tqty)
 
 propSimpleStart _ = True
 
 -- (qty, price)
 tupleTransactions = [(1.21, 24), (1.30, -2)]
 toTransaction :: (Double, Integer) -> Transaction
-toTransaction (price, qty) 
+toTransaction (price, qty)
   | qty < 0 = Transaction Sell (MkPrice $ read (show price)) (MkQty $ read (show (abs qty)))
-  | otherwise = Transaction Buy (MkPrice $read (show price)) (MkQty $ read (show (abs qty)))
+  | otherwise = Transaction Buy (MkPrice $ read (show price)) (MkQty $ read (show (abs qty)))
 
 runTests :: IO ()
 runTests = do
   let testArgs = stdArgs {maxSuccess = 1000}
-  --quickCheckWith testArgs propNoFreeMoney
   quickCheckWith testArgs propSimpleStart
 

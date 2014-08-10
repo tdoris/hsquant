@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Quant.Base.Types 
 (
@@ -13,6 +14,7 @@ module Quant.Base.Types
 , RIC
 , Root 
 , TimeStamp 
+, Amount(..)
 , Price(..)
 , Qty(..)
 , TickSize
@@ -33,12 +35,14 @@ module Quant.Base.Types
 , LowAsk 
 , HighAsk 
 , TimeOfDay(..) 
+, AmountMaker(..)
 , parseDate
 , parseTime
 , getPrice
 , getQty
 , getTime
 , getCount
+, calcAmount
 )
 where
 
@@ -49,6 +53,7 @@ import Quant.Decimal
 
 newtype Price = MkPrice Decimal deriving (Show,Eq,Ord,Num)
 newtype Qty = MkQty Decimal deriving (Show,Eq,Ord,Num)
+newtype Amount = MkAmount Decimal deriving (Show,Eq,Ord,Num)
 newtype Count = MkCount Decimal deriving (Show,Eq,Ord,Num)
 newtype TickSize = MkTickSize Decimal deriving (Show,Eq,Ord)
 
@@ -124,6 +129,21 @@ data Bar = Bar
   , barQuoteCount :: Count
   }
   deriving (Eq, Show, Ord)
+
+class AmountMaker a b where
+  toAmount :: a -> b -> Amount
+
+instance AmountMaker Price Qty where
+  toAmount (MkPrice p) (MkQty q) = MkAmount (p*q)
+
+instance AmountMaker Amount Qty where
+  toAmount (MkAmount p) (MkQty q) = MkAmount (p*q)
+
+calcAmount :: Price -> Qty -> Amount
+calcAmount (MkPrice p) (MkQty q) = MkAmount (p*q)
+
+amountMultiply :: Amount -> Qty -> Amount
+amountMultiply (MkAmount a) (MkQty q) = MkAmount (a*q)
 
 
 -- functions to parse basic types from bytestrings

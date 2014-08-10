@@ -1,7 +1,7 @@
 module Quant.Base.Metrics
 (
- vwap
-,ohlc
+-- vwap
+--,ohlc
 )
 where
 
@@ -9,12 +9,16 @@ import Data.Ord
 import Data.List
 import Quant.Base.Types
 
+-- This needs to be rewritten with a price type that is ticksize aware, 
+-- now that we've made price, qty and ticksize distinct types
+--
 -- | calculate the weighted average price
 -- This function assumes an exogenous tick size/resolution
 -- the calculation is formulated as solving for the price 
 -- Min err = abs (vwap * totalQty - sum $ zipWith (*) prices qtys)
 -- where vwap is an element of linspace pmin tick pmax 
 --
+{-
 vwap :: [(Price, Qty)] -> TickSize -> Price
 vwap [] _ = error "vwap passed empty list"
 vwap pqs tick = head ps
@@ -37,4 +41,4 @@ linspace pstart tick pend = takeWhile (pend>=) $ iterate (\p -> p + tick) pstart
 --return the element that minimizes the function
 sortByRange :: Ord a => (a->a) -> [a] -> [a]
 sortByRange f ds = map fst $ sortBy (comparing snd) $ zip ds (map f ds)
-
+-}
