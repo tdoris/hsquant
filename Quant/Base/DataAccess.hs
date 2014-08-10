@@ -1,38 +1,47 @@
-{-# LANGUAGE ScopedTypeVariables,RecordWildCards,OverloadedStrings #-}
-module Quant.Base.DataAccess 
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+module Quant.Base.DataAccess
 (
-loadTrades
+  Root
+, RIC
+, loadTrades
 , loadQuotes
 , loadBars
-, escapeRIC 
+, escapeRIC
 , tradesFile
 , quotesFile
 )
 where
 
-import System.FilePath
-import Data.List
-import Data.Char
 import qualified Data.ByteString.Char8 as BS
-import Quant.Base.Types
-import Quant.Base.CSV
+import           Data.Char
+import           Data.List
+import           Quant.Base.CSV
+import           Quant.Base.Exchange
+import Quant.Base.Bars
+import           Quant.Base.Types
+import           System.FilePath
+
+type Root = FilePath
+type RIC = String
 
 loadBars :: Root -> Date -> RIC-> IO [Bar]
 loadBars root date ric' = do
   let ric = escapeRIC ric'
   let bf = barsFile root date ric
-  barsFileContent <- loadCSVBZ bf 
+  barsFileContent <- loadCSVBZ bf
   let bars = parseBarsCSV barsFileContent
   return bars
 
 -- | load quotes for a day from csv format file, given the root of the filesystem db
 --
--- > loadQuotes "/data/trth" (Date "2012" "02" "14") "VOD.L" 
+-- > loadQuotes "/data/trth" (Date "2012" "02" "14") "VOD.L"
 
 loadQuotes' :: FilePath -> IO [ExchangeQuote]
-loadQuotes' qf = do 
-  quotesCSV <- loadCSVBZ qf 
-  let quotes = parseQuotesCSV quotesCSV 
+loadQuotes' qf = do
+  quotesCSV <- loadCSVBZ qf
+  let quotes = parseQuotesCSV quotesCSV
   return quotes
 
 loadQuotes :: Root -> Date -> RIC -> IO [ExchangeQuote]
@@ -63,42 +72,42 @@ genFName :: String->Root -> Date -> RIC -> FilePath
 genFName stem root (Date year month day) ric  = root </> year </> month </> day </> stem </> ric <.> "csv" <.> "bz2"
 
 tradesFile :: Root -> Date -> RIC -> FilePath
-tradesFile = genFName "trades" 
+tradesFile = genFName "trades"
 
 quotesFile :: Root -> Date -> RIC -> FilePath
 quotesFile = genFName "quotes"
 
 barsFile :: Root -> Date -> RIC -> FilePath
-barsFile root (Date year month day) ric = root </> year </> month </> day </> "bars" </> ric <.> "csv" <.> "bz2" 
-  
+barsFile root (Date year month day) ric = root </> year </> month </> day </> "bars" </> ric <.> "csv" <.> "bz2"
+
 parseBarsCSV :: CSVTable -> [Bar]
 parseBarsCSV table = bars
   where
     cols = getColumns table ["time","volume"
       ,"bid_start","start_ask","volume_up","volume_dn","volume_neither","trades","quotes","vwap","high","low"]
     rows = transpose cols
-    bars = map (\[time,volume,start_bid,start_ask,volume_up,volume_dn,volume_neither,tradeCount,quoteCount,vwap,_high,_low] 
-                   -> Bar (parseTime time) (getPrice start_bid) 0 0 0 (getPrice start_ask) 0 0 0 (getPrice vwap) (getQty volume) 
+    bars = map (\[time,volume,start_bid,start_ask,volume_up,volume_dn,volume_neither,tradeCount,quoteCount,vwap,_high,_low]
+                   -> Bar (parseTime time) (getPrice start_bid) 0 0 0 (getPrice start_ask) 0 0 0 (getPrice vwap) (getQty volume)
                           0 0 (getQty volume_dn) (getQty volume_up) (getQty volume_neither) (getCount tradeCount) (getCount quoteCount)
-               ) 
+               )
                rows
 
 parseTradesCSV :: CSVTable -> [ExchangeTrade]
 parseTradesCSV table = trades
   where
-    cols = getColumns table ["Time[L]", "Price", "Volume", "Qualifiers"] 
+    cols = getColumns table ["Time[L]", "Price", "Volume", "Qualifiers"]
     rows' = transpose cols
-    rows  = filter (\[_,_,_,q] -> isOnMarket q) rows' 
+    rows  = filter (\[_,_,_,q] -> isOnMarket q) rows'
     trades = map (\[t,p,q,_] -> ExchangeTrade (getTime t) (getPrice p) (getQty q)) rows
 
 -- TODO fixme
 isOnMarket :: BS.ByteString -> Bool
 isOnMarket _ = True
 
-data QuoteRow = QuoteRow 
-  { _quoteRowTime :: BS.ByteString 
-  , quoteRowBid :: BS.ByteString
-  , quoteRowAsk :: BS.ByteString
+data QuoteRow = QuoteRow
+  { _quoteRowTime  :: BS.ByteString
+  , quoteRowBid    :: BS.ByteString
+  , quoteRowAsk    :: BS.ByteString
   , quoteRowBidQty :: BS.ByteString
   , quoteRowAskQty :: BS.ByteString
   } deriving (Eq, Show,Ord)
@@ -108,8 +117,8 @@ toQuote (QuoteRow t bid ask bqty aqty) = ExchangeQuote (getTime t) (getPrice bid
 
 parseQuotesCSV :: CSVTable -> [ExchangeQuote]
 parseQuotesCSV table = map toQuote quotes
-  where  
-    cols' = getColumns table ["Time[L]", "Bid Price", "Ask Price", "Bid Size", "Ask Size"] 
+  where
+    cols' = getColumns table ["Time[L]", "Bid Price", "Ask Price", "Bid Size", "Ask Size"]
     rows = transpose cols'
     [time0, bidPrice0, askPrice0, bidQty0, askQty0] = head rows
     startQoute = QuoteRow time0 bidPrice0 askPrice0 bidQty0 askQty0
@@ -119,18 +128,18 @@ isQuoteValid :: QuoteRow -> Bool
 isQuoteValid (QuoteRow _ bid ask bqty aqty) = bid /= "" && ask /= "" && bqty /= "" && aqty /= ""
 
 quoteUpdateWrap :: [QuoteRow] -> [BS.ByteString] -> [QuoteRow]
-quoteUpdateWrap qs@(lastquote:_) row =  
-  case updateQuote lastquote row of 
+quoteUpdateWrap qs@(lastquote:_) row =
+  case updateQuote lastquote row of
     Just newQuote -> newQuote : qs
     Nothing -> qs
 quoteUpdateWrap qs _ = qs
 
 updateQuote :: QuoteRow -> [BS.ByteString] -> Maybe QuoteRow
-updateQuote lastQuote [time, bid, ask, bqty, aqty]= 
+updateQuote lastQuote [time, bid, ask, bqty, aqty]=
   if doUpdate then Just newQuote else Nothing
   where
-    doUpdate = bid /= "" || ask /= "" || bqty /= "" || aqty /= "" 
-    newQuote = QuoteRow time newBid newAsk newBidQty newAskQty 
+    doUpdate = bid /= "" || ask /= "" || bqty /= "" || aqty /= ""
+    newQuote = QuoteRow time newBid newAsk newBidQty newAskQty
     newBid = if bid /= "" then bid else quoteRowBid lastQuote
     newAsk = if ask /= "" then ask else quoteRowAsk lastQuote
     newBidQty = if bqty /= "" then bqty else quoteRowBidQty lastQuote
@@ -139,8 +148,8 @@ updateQuote lastQuote [time, bid, ask, bqty, aqty]=
 updateQuote _ _ = Nothing
 
 escapeRIC :: RIC -> String
-escapeRIC = concatMap esc 
-  where 
+escapeRIC = concatMap esc
+  where
     s = "0123456789abcdef"
     esc c = if isAlphaNum c then [c] else [ '_', s !! div (fromEnum c) 16, s !! mod (fromEnum c) 16 ]
 

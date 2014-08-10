@@ -34,6 +34,9 @@ import qualified Data.ByteString.Char8 as BS
 import qualified Data.Vector as V
 
 import Quant.Base.Types
+import Quant.Base.Bars
+import Quant.Base.Exchange
+
 type ColumnName = String
 type Field = BS.ByteString
 

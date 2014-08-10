@@ -4,13 +4,37 @@ module Quant.Base.Bars
 (
 createBars
 , MinutesPerBar
+, Bar(..)
 )
 where
 
 import Data.List
 import Data.Maybe (mapMaybe)
 import Quant.Base.Types
+import Quant.Base.Exchange
 import Quant.Base.Utils
+
+data Bar = Bar
+  { barTime             :: TimeOfDay
+  , barOpenBid          :: OpenBid
+  , barLowBid           :: LowBid
+  , barHighBid          :: HighBid
+  , barCloseBid         :: CloseBid
+  , barOpenAsk          :: OpenAsk
+  , barLowAsk           :: LowAsk
+  , barHighAsk          :: HighAsk
+  , barCloseAsk         :: CloseAsk
+  , barVWAP             :: Price
+  , barVolume           :: Qty
+  , barTWABidQty        :: TWABidQty
+  , barTWAAskQty        :: TWAAskQty
+  , barTradedBidQty     :: Qty
+  , barTradedAskQty     :: Qty
+  , barTradedUnknownQty :: Qty
+  , barTradeCount       :: Count
+  , barQuoteCount       :: Count
+  }
+  deriving (Eq, Show, Ord)
 
 
 type MinutesPerBar = Int 

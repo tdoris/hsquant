@@ -13,7 +13,6 @@ module Quant.Base.Exchange
 , HighBid
 , LowAsk
 , HighAsk
-, Bar(..)
 , ExchangeQuote(..)
 , ExchangeTrade(..)
 , TWABidQty
@@ -61,28 +60,6 @@ data ExchangeTrade = ExchangeTrade
   { tradeTime  :: TimeOfDay
   , tradePrice :: Price
   , tradeQty   :: Qty
-  }
-  deriving (Eq, Show, Ord)
-
-data Bar = Bar
-  { barTime             :: TimeOfDay
-  , barOpenBid          :: OpenBid
-  , barLowBid           :: LowBid
-  , barHighBid          :: HighBid
-  , barCloseBid         :: CloseBid
-  , barOpenAsk          :: OpenAsk
-  , barLowAsk           :: LowAsk
-  , barHighAsk          :: HighAsk
-  , barCloseAsk         :: CloseAsk
-  , barVWAP             :: Price
-  , barVolume           :: Qty
-  , barTWABidQty        :: TWABidQty
-  , barTWAAskQty        :: TWAAskQty
-  , barTradedBidQty     :: Qty
-  , barTradedAskQty     :: Qty
-  , barTradedUnknownQty :: Qty
-  , barTradeCount       :: Count
-  , barQuoteCount       :: Count
   }
   deriving (Eq, Show, Ord)
 

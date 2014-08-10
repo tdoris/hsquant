@@ -1,15 +1,17 @@
-{-# LANGUAGE ScopedTypeVariables,RecordWildCards,OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
-import System.Environment
-import System.FilePath
-import System.Directory
-import qualified Data.ByteString.Lazy as BL
 import qualified Codec.Compression.BZip as BZip
-import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Char8  as BS
+import qualified Data.ByteString.Lazy   as BL
+import           System.Directory
+import           System.Environment
+import           System.FilePath
 
-import Quant
+import           Quant
 
---usage: MakeBars "/data/trth" "/data/tdoris/bars/" VOD.L 20120214 
+--usage: MakeBars "/data/trth" "/data/tdoris/bars/" VOD.L 20120214
 --
 main :: IO ()
 main = do
@@ -23,7 +25,7 @@ makeBars :: FilePath -> Date -> RIC -> FilePath -> IO ()
 makeBars ticRoot date ric outputRoot = do
   quotes <- loadQuotes ticRoot date ric
   trades <- loadTrades ticRoot date ric
-  let bars = createBars quotes trades 1 
+  let bars = createBars quotes trades 1
   let escapedRIC = escapeRIC ric
   let outputDirectory = outputRoot </> dateYear date </> dateMonth date </> dateDay date
   let outputFile = outputDirectory </> escapedRIC <.> "csv" <.> "bz"
