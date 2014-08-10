@@ -50,7 +50,6 @@ Library
     , Quant.Base.CSV
     , Quant.Base.DataAccess
     , Quant.Base.Bars
-    , Quant.Base.Metrics
     , Quant.Base.Utils
     , Quant.Base.KTime
     , Quant.Decimal 
@@ -78,6 +77,7 @@ Library
     , convertible
     , ghc-prim
     , lens
+    , mtl
   
   -- Modules not exported by this package.
   -- Other-modules:       

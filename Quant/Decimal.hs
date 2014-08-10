@@ -30,7 +30,6 @@
 -- (e.g. to conform to a network protocol).
 
 module Quant.Decimal (
---   runTests,
    -- ** Decimal Values
    DecimalRaw (..),
    Decimal,
@@ -60,7 +59,6 @@ module Quant.Decimal (
 import           Data.Char
 import           Data.Ratio
 import           Data.Word
-import           Numeric
 import           Test.QuickCheck
 import           Text.ParserCombinators.ReadP
 
@@ -235,9 +233,9 @@ divide (Decimal e n) d
 -- TFD, 20140809: the quickcheck test finds counterexamples where the 
 -- allocation doesn't sum, e.g. allocate 706 [518150699,940817838,688515111]
 -- == -705
--- I expect there's overflow + rounding issues, makes sense that you could
+-- there's overflow + rounding issues, makes sense that you could
 -- construct a list of ints s.t. this method doesn't work.
--- problem is in (sum ps) if the sum of the ints overflow, lets try Integer
+-- problem is in (sum ps) if the sum of the ints overflow, so I changed to Integer
 allocate :: (Integral i) => DecimalRaw i -> [Integer] -> [DecimalRaw i]
 allocate (Decimal e n) ps
     | total == 0  =
@@ -367,8 +365,8 @@ prop_abs d =  decimalPlaces a == decimalPlaces d &&
 prop_signum :: Decimal -> Bool
 prop_signum d =  signum d == (fromInteger $ signum $ decimalMantissa d)
 
-runTests :: IO ()
-runTests = do
+_runTests :: IO ()
+_runTests = do
   let testArgs = stdArgs {maxSuccess = 1000}
   quickCheckWith testArgs prop_readShow 
   quickCheckWith testArgs prop_readShowPrecision 

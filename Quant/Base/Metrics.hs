@@ -1,44 +1,37 @@
 module Quant.Base.Metrics
 (
--- vwap
---,ohlc
+ vwap
+,ohlc
 )
 where
 
 import Data.Ord
 import Data.List
 import Quant.Base.Types
+import Quant.Decimal
 
--- This needs to be rewritten with a price type that is ticksize aware, 
--- now that we've made price, qty and ticksize distinct types
+-- | calculate the volume weighted average price
 --
--- | calculate the weighted average price
--- This function assumes an exogenous tick size/resolution
--- the calculation is formulated as solving for the price 
--- Min err = abs (vwap * totalQty - sum $ zipWith (*) prices qtys)
--- where vwap is an element of linspace pmin tick pmax 
---
-{-
-vwap :: [(Price, Qty)] -> TickSize -> Price
-vwap [] _ = error "vwap passed empty list"
-vwap pqs tick = head ps
+
+vwap :: [(Price, Qty)] -> Maybe Price
+vwap [] = Nothing 
+vwap ts = 
+    case divide amount qty of
+      (_, v):_ -> Just v
+      _ -> Nothing
   where
-    ps = sortByRange (err totalQty totalAmount) (linspace (minimum prices) tick (maximum prices))
-    err totQty totAmt vwap' = abs $ vwap' * totQty - totAmt
-    totalAmount = sum $ zipWith (*) prices qtys
-    prices = map fst pqs
-    qtys = map snd pqs
-    totalQty = sum qtys
+    (MkAmount amount, MkQty qty) = sums ts
+    sums :: [(Price, Qty)] -> (Amount, Qty)
+    sums ts = (sum $ map (curry toAmount) ts, sum $ map snd ts)
 
 -- | calculate open, high, low, and close
-ohlc :: Ord a =>  [a] -> (a, a, a, a)
-ohlc [] = error "empty list passed to ohlc"
-ohlc ds = (head ds, maximum ds, minimum ds, last ds)
+ohlc :: [Price] -> Maybe (Price, Price, Price, Price)
+ohlc [] = Nothing 
+ohlc ds = Just (head ds, maximum ds, minimum ds, last ds)
 
-linspace :: Price -> TickSize -> Price -> [Price]
-linspace pstart tick pend = takeWhile (pend>=) $ iterate (\p -> p + tick) pstart
+-- linspace :: Price -> TickSize -> Price -> [Price]
+-- linspace pstart tick pend = takeWhile (pend>=) $ iterate (\p -> p + tick) pstart
 
 --return the element that minimizes the function
-sortByRange :: Ord a => (a->a) -> [a] -> [a]
-sortByRange f ds = map fst $ sortBy (comparing snd) $ zip ds (map f ds)
--}
+-- sortByRange :: Ord a => (a->a) -> [a] -> [a]
+-- sortByRange f ds = map fst $ sortBy (comparing snd) $ zip ds (map f ds)

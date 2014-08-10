@@ -56,6 +56,10 @@ newtype Qty = MkQty Decimal deriving (Show,Eq,Ord,Num)
 newtype Amount = MkAmount Decimal deriving (Show,Eq,Ord,Num)
 newtype Count = MkCount Decimal deriving (Show,Eq,Ord,Num)
 newtype TickSize = MkTickSize Decimal deriving (Show,Eq,Ord)
+data TickLadder = MkTickLadder { 
+    _minTick :: Decimal
+    , _ladder :: [(Price, TickSize)] 
+   } deriving (Show, Eq, Ord)
 
 type TWABidQty = Qty
 type TWAAskQty = Qty
