@@ -182,15 +182,6 @@ instance (Integral i) => Num (DecimalRaw i) where
 instance (Integral i) => Real (DecimalRaw i) where
     toRational (Decimal e n) = fromIntegral n % (10 ^ e)
 
--- very very suspect, total hack in order to be able to use floating literals in code that requires Decimal type
--- only wanted to defined fromRational for this... maybe should set (/) and recip to "undefined" or "error"?
-{--instance Fractional Decimal where
-  (/) x y = read $ showFFloat Nothing (xd / yd) ""
-      where xd = (read (show x)) :: Double
-            yd = (read (show y)) :: Double
-  recip x = read $ show (1.0 / (read (show x) :: Double))
-  fromRational x = read (showFFloat Nothing (fromRational x :: Double) "")
---}
 --
 instance (Integral i, Arbitrary i) => Arbitrary (DecimalRaw i) where
     arbitrary = do
@@ -233,7 +224,7 @@ divide (Decimal e n) d
 -- TFD, 20140809: the quickcheck test finds counterexamples where the 
 -- allocation doesn't sum, e.g. allocate 706 [518150699,940817838,688515111]
 -- == -705
--- there's overflow + rounding issues, makes sense that you could
+-- there are overflow + rounding issues, makes sense that you could
 -- construct a list of ints s.t. this method doesn't work.
 -- problem is in (sum ps) if the sum of the ints overflow, so I changed to Integer
 allocate :: (Integral i) => DecimalRaw i -> [Integer] -> [DecimalRaw i]

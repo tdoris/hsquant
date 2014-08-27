@@ -17,10 +17,11 @@ where
 import qualified Data.ByteString.Char8 as BS
 import           Data.Char
 import           Data.List
+import           Quant.Base.Bars
 import           Quant.Base.CSV
 import           Quant.Base.Exchange
-import Quant.Base.Bars
 import           Quant.Base.Types
+import           Quant.Base.DateTime
 import           System.FilePath
 
 type Root = FilePath

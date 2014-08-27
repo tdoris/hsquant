@@ -22,6 +22,7 @@ module Quant.Base.Exchange
 where
 
 import           Quant.Base.Types
+import           Quant.Base.DateTime
 import           Quant.Decimal
 
 newtype TickSize = MkTickSize Decimal deriving (Show,Eq,Ord)

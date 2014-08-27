@@ -1,6 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables #-} 
+{-# LANGUAGE ScopedTypeVariables #-}
 
-module Quant.Base.Bars 
+module Quant.Base.Bars
 (
 createBars
 , MinutesPerBar
@@ -8,11 +8,12 @@ createBars
 )
 where
 
-import Data.List
-import Data.Maybe (mapMaybe)
-import Quant.Base.Types
-import Quant.Base.Exchange
-import Quant.Base.Utils
+import           Data.List
+import           Data.Maybe          (mapMaybe)
+import           Quant.Base.Exchange
+import           Quant.Base.Types
+import           Quant.Base.DateTime
+import           Quant.Base.Utils
 
 data Bar = Bar
   { barTime             :: TimeOfDay
@@ -37,7 +38,7 @@ data Bar = Bar
   deriving (Eq, Show, Ord)
 
 
-type MinutesPerBar = Int 
+type MinutesPerBar = Int
 data BarInput = BarInput [ExchangeQuote] [ExchangeTrade]
 
 -- | Create bars given the quotes and trades and the specified minutes per bar,
@@ -46,7 +47,7 @@ data BarInput = BarInput [ExchangeQuote] [ExchangeTrade]
 createBars :: [ExchangeQuote] -> [ExchangeTrade] -> MinutesPerBar -> [Bar]
 createBars [] _ _ = []
 createBars quotes trades barMinutes = bars
-  where 
+  where
     lastTimeStamp = maximum (lastExchangeQuoteStamp ++ lastExchangeTradeStamp)
     lastExchangeQuoteStamp = map quoteTime (take 1 $ reverse quotes)
     lastExchangeTradeStamp = map tradeTime (take 1 $ reverse trades)
@@ -65,19 +66,19 @@ synthExchangeQuotes _ [] = []
 synthExchangeQuotes quotes@(q:_) (t:ts) = if quoteTime q > t then synthExchangeQuotes quotes ts else squote : synthExchangeQuotes (q1:qs') ts
   where
     (q1:qs') = dropWhileLessOne (\qr -> quoteTime qr < t) quotes
-    squote = q1{ quoteTime = t } 
-    
--- quotes and trades are assumed to be ordered by timestamp 
+    squote = q1{ quoteTime = t }
+
+-- quotes and trades are assumed to be ordered by timestamp
 createBar :: BarInput -> Maybe Bar
 createBar (BarInput [] _) = Nothing
-createBar (BarInput quotes trades) = 
-  Just (Bar start openBid lowBid highBid closeBid openAsk lowAsk highAsk closeAsk 
+createBar (BarInput quotes trades) =
+  Just (Bar start openBid lowBid highBid closeBid openAsk lowAsk highAsk closeAsk
             vwapExchangeTrades volume 0 0 tradedBidQty tradedAskQty (volume - (tradedBidQty + tradedAskQty))
             (genericLength trades) (genericLength quotes))
-  where 
+  where
     start = quoteTime $ head quotes
-    --bids = map quoteBid quotes 
-    --asks = map quoteAsk quotes 
+    --bids = map quoteBid quotes
+    --asks = map quoteAsk quotes
     qtys = map tradeQty trades
     (openBid, highBid, lowBid, closeBid) = undefined -- ohlc bids
     (openAsk, highAsk, lowAsk, closeAsk) = undefined -- ohlc asks
@@ -88,31 +89,31 @@ createBar (BarInput quotes trades) =
     tradesOnBid = getExchangeTradesOnBid quotes trades
     tradesOnAsk = getExchangeTradesOnAsk quotes trades
     tradedAskQty = sum $ map tradeQty tradesOnAsk
-    tradedBidQty = sum $ map tradeQty tradesOnBid 
-    
-getExchangeTradesOnAsk :: [ExchangeQuote] -> [ExchangeTrade] -> [ExchangeTrade] 
+    tradedBidQty = sum $ map tradeQty tradesOnBid
+
+getExchangeTradesOnAsk :: [ExchangeQuote] -> [ExchangeTrade] -> [ExchangeTrade]
 getExchangeTradesOnAsk qs ts = tradesOnAsk' qs ts []
 
 tradesOnAsk' :: [ExchangeQuote] -> [ExchangeTrade] -> [ExchangeTrade] -> [ExchangeTrade]
 tradesOnAsk' [] _ result = result
 tradesOnAsk' _ [] result = result
-tradesOnAsk' quotes (t:ts) result = 
-  case quotes' of 
+tradesOnAsk' quotes (t:ts) result =
+  case quotes' of
     [] -> result
-    (q:_) -> if quoteTime q <= tradeTime t && quoteAsk q <= tradePrice t then tradesOnAsk' quotes' ts (t:result) else tradesOnAsk' quotes' ts result 
-  where  
-    quotes' = dropUntilNext (\q -> quoteTime q > tradeTime t) quotes 
+    (q:_) -> if quoteTime q <= tradeTime t && quoteAsk q <= tradePrice t then tradesOnAsk' quotes' ts (t:result) else tradesOnAsk' quotes' ts result
+  where
+    quotes' = dropUntilNext (\q -> quoteTime q > tradeTime t) quotes
 
-getExchangeTradesOnBid :: [ExchangeQuote] -> [ExchangeTrade] -> [ExchangeTrade] 
+getExchangeTradesOnBid :: [ExchangeQuote] -> [ExchangeTrade] -> [ExchangeTrade]
 getExchangeTradesOnBid qs ts = tradesOnBid' qs ts []
 
 tradesOnBid' :: [ExchangeQuote] -> [ExchangeTrade] -> [ExchangeTrade] -> [ExchangeTrade]
 tradesOnBid' [] _ result = result
 tradesOnBid' _ [] result = result
-tradesOnBid' quotes (t:ts) result = 
-  case quotes' of 
+tradesOnBid' quotes (t:ts) result =
+  case quotes' of
     [] -> result
-    (q:_) -> if quoteTime q <= tradeTime t && quoteBid q >= tradePrice t then tradesOnBid' quotes' ts (t:result) else tradesOnBid' quotes' ts result 
-  where  
-    quotes' = dropUntilNext (\q -> quoteTime q > tradeTime t) quotes 
+    (q:_) -> if quoteTime q <= tradeTime t && quoteBid q >= tradePrice t then tradesOnBid' quotes' ts (t:result) else tradesOnBid' quotes' ts result
+  where
+    quotes' = dropUntilNext (\q -> quoteTime q > tradeTime t) quotes
 

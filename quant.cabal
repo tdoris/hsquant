@@ -47,6 +47,7 @@ Library
   -- Modules exported by the library.
   Exposed-modules:   Quant
     , Quant.Base.Types
+    , Quant.Base.DateTime
     , Quant.Base.Exchange
     , Quant.Base.CSV
     , Quant.Base.DataAccess
