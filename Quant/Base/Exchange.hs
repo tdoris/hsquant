@@ -1,6 +1,10 @@
 module Quant.Base.Exchange
 (
   TickSize
+, upTick
+, downTick
+, mkTickLadder
+, isValidPrice
 , Bid
 , Ask
 , BidQty
@@ -30,7 +34,7 @@ import Data.List (sort)
 -- e.g. read "(10, 10)" :: (Decimal, Decimal) -> parse fail
 -- this differs from the behaviour for a (Double, Double), where spaces are handled fine.
 --
-myl = mkTickLadder' "(0.0,0.001)" "[(1000,1.0), (100,0.1), (10,0.05)]" 
+--myl = mkTickLadder' "(0.0,0.001)" "[(1000,1.0), (100,0.1), (10,0.05)]" 
 
 newtype TickSize = MkTickSize Decimal deriving (Show,Eq,Ord)
 -- TODO validate the ladder, 
@@ -39,9 +43,9 @@ data TickLadder = MkTickLadder {
      _ladder :: ([(Price, TickSize)],(Price,TickSize)) -- series of ticksizes, starting price and ticksize, in descending order
    } deriving (Show, Eq, Ord)
 
--- eg mkTickLadder' "(0.0,0.001)" "[(1000,1.0), (100,0.1), (10,0.01)]" 
-mkTickLadder' :: String -> String -> TickLadder
-mkTickLadder' ts ls = MkTickLadder (ladder, start)
+-- eg mkTickLadder "(0.0,0.001)" "[(1000,1.0), (100,0.1), (10,0.01)]" 
+mkTickLadder :: String -> String -> TickLadder
+mkTickLadder ts ls = MkTickLadder (ladder, start)
   where 
     start = (\(x,y) -> (MkPrice x, MkTickSize y)) (read ts :: (Decimal,Decimal))
     ladder = reverse $ sort $ (map (\(x, y) -> (MkPrice x, MkTickSize y)) (read ls::[(Decimal,Decimal)]))
@@ -68,7 +72,6 @@ addPriceTickSize' (MkPrice p) (MkTickSize t) n = MkPrice (p + (t * (fromIntegral
 
 subPriceTickSize :: Price -> TickSize -> Price
 subPriceTickSize (MkPrice p) (MkTickSize t) = MkPrice (p - t)
-
 
 
 rangeBase :: TickLadder -> Price -> (Price,TickSize)
@@ -102,7 +105,7 @@ enumLadder tl start end  = takeWhile (\p -> p<=end) $ dropWhile (\p -> p < start
 
 enum' :: [(Price, TickSize)] -> [Price]
 enum' [] = []
-enum' ((x,y):[]) = []
+enum' ((_,_):[]) = []
 enum' ((ps, ts):(pe, t):ls) = r ++ enum' ((pe,t):ls)
   where
     r = takeWhile (\x -> x <= pe) $ map (addPriceTickSize' ps ts) [0..]
@@ -114,8 +117,6 @@ toList (MkTickLadder (l,s)) = s : (sort l)
 dropWhileNext :: (a->Bool) -> [a] -> [a]
 dropWhileNext f l = map fst $ dropWhile (\(_,y) -> f y)  $ zip l (tail l)
 
-takeWhileNext :: (a->Bool) -> [a] -> [a]
-takeWhileNext f l = map fst $ takeWhile (\(_,y) -> f y)  $ zip l (tail l)
 
 type TWABidQty = Qty
 type TWAAskQty = Qty

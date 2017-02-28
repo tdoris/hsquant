@@ -146,7 +146,7 @@ instance (Integral i, Show i) => Show (DecimalRaw i) where
          padded = replicate (fromIntegral e + 1 - len) '0' ++ strN
          (intPart, fracPart) = splitAt (max 1 (len - fromIntegral e)) padded
 
-instance (Integral i, Read i) => Read (DecimalRaw i) where
+instance (Read i) => Read (DecimalRaw i) where
     readsPrec _ =
         readP_to_S $ do
           (intPart, _) <- gather $ do
@@ -183,7 +183,7 @@ instance (Integral i) => Real (DecimalRaw i) where
     toRational (Decimal e n) = fromIntegral n % (10 ^ e)
 
 --
-instance (Integral i, Arbitrary i) => Arbitrary (DecimalRaw i) where
+instance (Arbitrary i) => Arbitrary (DecimalRaw i) where
     arbitrary = do
       e <- sized (\n -> resize (n `div` 10) arbitrary) :: Gen Int
       m <- sized (\n -> resize (n * 10) arbitrary)
@@ -210,6 +210,9 @@ divide (Decimal e n) d
     | otherwise = error "Data.Decimal.divide: Divisor must be > 0."
 
 
+-- divToRational :: (Integral i) => DecimalRaw i -> DecimalRaw i -> Rational
+-- divToRational d1 d2 = n1 % n2
+--    where (e, n1, n2) = roundMax d1 d2
 
 -- | Allocate a @DecimalRaw@ value proportionately with the values in a list.
 -- The allocated portions are guaranteed to add up to the original value.

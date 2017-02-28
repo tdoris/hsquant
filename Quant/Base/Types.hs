@@ -20,7 +20,7 @@ module Quant.Base.Types
 )
 where
 
-import qualified Data.Attoparsec.Char8 as P
+import qualified Data.Attoparsec.ByteString.Char8 as P
 import qualified Data.ByteString.Char8 as BS
 import           Quant.Decimal
 
@@ -28,6 +28,8 @@ newtype Price = MkPrice Decimal deriving (Show,Eq,Ord,Num)
 newtype Qty = MkQty Decimal deriving (Show,Eq,Ord,Num)
 newtype Amount = MkAmount Decimal deriving (Show,Eq,Ord,Num)
 newtype Count = MkCount Decimal deriving (Show,Eq,Ord,Num)
+newtype LogReturn = MkLogReturn Double deriving (Show,Eq,Ord,Num)
+newtype SimpleReturn = MkSimpleReturn Double deriving (Show,Eq,Ord,Num)
 
 data Side = Buy | Sell deriving (Eq, Show)
 
@@ -40,6 +42,17 @@ instance AmountMaker Price Qty where
 instance AmountMaker Amount Qty where
   toAmount (MkAmount p) (MkQty q) = MkAmount (p*q)
 
+{-
+  class LogReturnMaker a b where
+    toLogReturn :: a -> b -> LogReturn
+    instance LogReturnMaker 
+
+    getLogReturn :: (
+        getSimpleReturn x y = (y - x) kl
+        instance LogReturnMaker Price Price where
+        toLogReturn (MkPrice p1) (MkPrice p2) = MkLogReturn (log (toRational (p1 - p2) ::Double))
+
+        -}
 -- functions to parse basic types from bytestrings
 
 getPrice :: BS.ByteString -> Price

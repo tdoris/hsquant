@@ -101,7 +101,7 @@ Executable MakeBars
     , bytestring
     , bytestring-lexing
     , hmatrix  
-    , hmatrix-gsl-stats
+    --, hmatrix-gsl-stats
     , bzlib
     , zlib
     , filepath

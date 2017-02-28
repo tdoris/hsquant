@@ -20,7 +20,6 @@ import Data.Data
 import Data.Convertible
 import Data.Time
 import Data.Time.Clock.POSIX
-import System.Locale
 
 -- milliseconds since the unix epoch always in UTC 
 -- ktime = 1000 * posix_time
