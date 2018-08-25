@@ -20,8 +20,8 @@ module Quant.Base.DateTime
 )
 where
 
-import           Control.Applicative
-import qualified Data.Attoparsec.Char8 as P
+--import           Control.Applicative
+import qualified Data.Attoparsec.ByteString.Char8 as P
 import qualified Data.ByteString.Char8 as BS
 
 -- | simplistic representation of time of day as the number of milliseconds since midnight,

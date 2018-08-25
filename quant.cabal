@@ -56,13 +56,12 @@ Library
     , Quant.Base.KTime
     , Quant.Decimal 
     , Quant.Performance 
+
   
   -- Packages needed in order to build this package.
   Build-depends: base
     , bytestring
     , bytestring-lexing
-    , hmatrix  
-  --  , hmatrix-gsl-stats
     , bzlib
     , zlib
     , filepath
@@ -100,8 +99,6 @@ Executable MakeBars
     , quant
     , bytestring
     , bytestring-lexing
-    , hmatrix  
-    --, hmatrix-gsl-stats
     , bzlib
     , zlib
     , filepath
@@ -117,6 +114,20 @@ Executable MakeBars
     , time
     , convertible
     , ghc-prim
+    , lens
+    , mtl
+  
+  other-modules: Quant
+    , Quant.Base.Types
+    , Quant.Base.DateTime
+    , Quant.Base.Exchange
+    , Quant.Base.CSV
+    , Quant.Base.DataAccess
+    , Quant.Base.Bars
+    , Quant.Base.Utils
+    , Quant.Base.KTime
+    , Quant.Decimal 
+    , Quant.Performance 
   ---rtsopts -prof -auto-all
    
 --Executable Calibrate
